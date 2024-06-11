@@ -88,7 +88,6 @@ class Button:
     def button_clicked(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
             if self.is_over(pygame.mouse.get_pos()):
-                # messagebox.showinfo('button clicked', f'you clicked on button {self.index}')
                 return True  # Button was clicked
         return False  # Button was not clicked
 
@@ -128,7 +127,7 @@ def draw_info_current_bloc(screen):
     text_rect.center = (600,150)
     screen.blit(text_surface, text_rect)
     
-    show_leds_lettres()
+    show_leds_lettres((blocs[selected_bloc]))
     
     pass
 
@@ -171,7 +170,7 @@ num_leds = 300
 def show_leds_lettres(sequence_lettres):
     # pixels.fill((0, 0, 0))
     # pixels.show()
-    
+    print(sequence_lettres)
     pass
 
 
@@ -216,13 +215,18 @@ class InputBox:
                 # Re-render the text.
                 self.txt_surface = font.render(self.text, True, self.color)
 
+    def render(self):
+        self.txt_surface = font.render(self.text, True, self.color)
+    
     def update(self):
         # Resize the box if the text is too long.
         width = max(200, self.txt_surface.get_width()+10)
         self.rect.w = width
+        self.render()
 
     def draw(self, screen):
         # Blit the text.
+        self.update()
         screen.blit(self.txt_surface, (self.rect.x+5, self.rect.y+5))
         # Blit the rect.
         pygame.draw.rect(screen, self.color, self.rect, 2)
@@ -230,8 +234,8 @@ class InputBox:
 input_sequence = InputBox(400, 100, 140, 32)
 input_name = InputBox(100, 100, 140, 32)
 button_submit = Button("Submit", 100, 200, 140, 32, WHITE, BLUE)
-text_name = _text_(FONT, 24, "nom du bloc", True, WHITE, BLUE, 100, 50)
-text_seqence = _text_(FONT, 24, "s?quence du bloc", True, WHITE, BLUE, 400, 50)
+text_name = _text_(FONT, 24, "nom du bloc", True, WHITE, None, 100, 50)
+text_seqence = _text_(FONT, 24, "sequence du bloc\nsepare par une virgule", True, WHITE, None, 400, 50)
 
 button_add_bloc = Button("Add Bloc", 500, 500, 140, 32, WHITE, BLUE)
 
@@ -263,15 +267,18 @@ while True:
         if current_scene == 'addbloc':
             input_sequence.handle_event(event)
             input_name.handle_event(event)
+            # ________________________submit button________________________
             if(button_submit.button_clicked(event)):
                 if(input_sequence.text != ''):
                     sequence = input_sequence.text.replace(' ', '').replace('\r','').split(',')
                     name = input_name.text
                     blocs[name] = sequence
                     print(blocs)
-                    input_sequence.text = ''
                     buttons = create_buttons(list(blocs.keys()), x_start_pos, y_start_pos, button_width, button_height, button_spacing)
                     screen.fill((30, 30, 30))
+                    input_sequence.text = ''
+                    input_name.text = ''
+                    
                     current_scene = 'button_list'
                     pass
 
@@ -279,12 +286,13 @@ while True:
         screen.fill((30, 30, 30))
         draw_button_list_scene(screen, buttons, current_page)
         draw_info_current_bloc(screen)
-        show_leds()
+        # show_leds()
         left_arrow.draw(screen)
         right_arrow.draw(screen)
         button_add_bloc.draw(screen)
         
     if current_scene == 'addbloc':
+        # print(input_sequence.text, input_name.text)
         screen.fill((30, 30, 30))
         input_sequence.update()
         input_sequence.draw(screen)
