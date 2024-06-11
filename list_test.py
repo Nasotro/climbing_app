@@ -18,7 +18,7 @@ BLUE = (0, 0, 255)
 
 FONT = "font2.ttf"
 
-button_texts = ["Bloc 1", "Bloc 2", "Bloc 3", "Bloc 4", "Bloc 5", "Bloc 6", "Bloc 7", "Bloc 8", "Bloc 9", "Bloc 10","11","12","13","14","15","16","17","18","19","20"]
+blocs = {'bloc1': [1,2,3,4,5,6,7,8,9,10], 'bloc2': [11,12,13,14,15,16,17,18,19,20]}
 
 x_start_pos = 150
 y_start_pos = 40
@@ -30,10 +30,26 @@ y_pos = y_start_pos
 button_spacing = 30
 
 nb_holds = 11*16
+font = pygame.font.Font(FONT, 24)
 
+
+class _text_():
+    def __init__(self, font, size, text, antialias, colour, background, x, y):
+        self.font = font
+        self.size = size
+        self.text = text
+        self.antialias = antialias
+        self.colour = colour
+        self.background = background 
+        self.x = x
+        self.y = y
+        texts = pygame.font.SysFont(self.font, self.size)
+        self.text = texts.render(self.text, self.antialias, self.colour, self.background)
+    def _textblit_(self, screen):
+        screen.blit(self.text, (self.x, self.y))
+        
 class Button:
-    def __init__(self, text, x, y, width, height, color, text_color, index):
-        self.index = index
+    def __init__(self, text, x, y, width, height, color, text_color):
         self.text = text
         self.x = x
         self.y = y
@@ -49,9 +65,6 @@ class Button:
             
         # Draw the button
         pygame.draw.rect(screen, self.color, (self.x, self.y, self.width, self.height))
-
-        # Create a font object
-        font = pygame.font.Font(FONT, 24)
 
         # Create a text surface
         text_surface = font.render(self.text, True, self.text_color)
@@ -74,7 +87,6 @@ class Button:
     
     def button_clicked(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
-            # print("test button" + str(self.index))
             if self.is_over(pygame.mouse.get_pos()):
                 # messagebox.showinfo('button clicked', f'you clicked on button {self.index}')
                 return True  # Button was clicked
@@ -105,97 +117,123 @@ def handle_right_arrow_click(page, num_pages):
     return page
 
 def draw_info_current_bloc(screen):
-    if(selected_bloc == -1): return
+    if(selected_bloc == ''): return
     font = pygame.font.Font(FONT, 24)
 
     # Create a text surface
-    text_surface = font.render(f'The bloc {button_texts[selected_bloc]} is active', True, WHITE)
+    text_surface = font.render(f'The bloc {selected_bloc} is active', True, WHITE)
 
     # Get the text rectangle
     text_rect = text_surface.get_rect()
     text_rect.center = (600,150)
     screen.blit(text_surface, text_rect)
+    
+    show_leds_lettres()
+    
     pass
 
-def create_buttons(button_texts, x_start_pos, y_start_pos, button_width, button_height, button_spacing):
+def create_buttons(button_names, x_start_pos, y_start_pos, button_width, button_height, button_spacing):
     buttons = []
     x_pos = x_start_pos
     y_pos = y_start_pos
-    for i, text in enumerate(button_texts):
-        button = Button(text, x_pos, y_pos, button_width, button_height, WHITE, BLUE, i)
+    for i, name in enumerate(button_names):
+        button = Button(name, x_pos, y_pos, button_width, button_height, WHITE, BLUE)
         buttons.append(button)
         y_pos += button_height + button_spacing
     return buttons
 
-buttons = create_buttons(button_texts, x_start_pos, y_start_pos, button_width, button_height, button_spacing)
 
-left_arrow = Button("<", 20, SCREEN_HEIGHT // 2, 30, 30, WHITE, BLUE, -1)
-right_arrow = Button(">", SCREEN_WIDTH - 50, SCREEN_HEIGHT // 2, 30, 30, WHITE, BLUE, -1)
+bloc_names = list(blocs.keys())
+buttons = create_buttons(bloc_names, x_start_pos, y_start_pos, button_width, button_height, button_spacing)
+
+left_arrow = Button("<", 20, SCREEN_HEIGHT // 2, 30, 30, WHITE, BLUE)
+right_arrow = Button(">", SCREEN_WIDTH - 50, SCREEN_HEIGHT // 2, 30, 30, WHITE, BLUE)
 
 start_index = 0
 
-num_buttons = len(button_texts)
+num_buttons = len(bloc_names)
 num_pages = (num_buttons - 1) // 5 + 1
 current_page = 0
 
 current_scene = 'button_list'
-selected_bloc = -1
+# current_scene = 'addbloc'
+
+selected_bloc = ""
 
 
-
-def set_random_blocs(n):
-    bloc_holds = []
-    for i in range(n):
-        bloc_holds.append([random.randint(0, nb_holds) for _ in range(random.randint(7, 15))])
-    return bloc_holds
-
-bloc_holds = set_random_blocs(len(buttons))
-selected_bloc_holds = []
+def set_bloc(name):
+    global selected_bloc
+    selected_bloc = name
+    print("bloc " + name + " selected")
 
 
-
-def set_bloc(i):
-    global selected_bloc, selected_bloc_holds
-    selected_bloc = i
-    selected_bloc_holds = bloc_holds[i]
-    print("bloc " + str(i) + " selected")
-    
-import neopixel
-import board
-
-pin = board.D18
 num_leds = 300
-pixels = neopixel.NeoPixel(pin, num_leds, brightness=0.2, auto_write=False)
-
-class AllLeds:
-    def __init__(self, num_leds):
-        self.num_leds = num_leds
-        self.leds = [0] * num_leds
-
-    def set_led(self, i, color):
-        self.leds[i] = color
-
-    def set_bloc(self, bloc_holds = None, color=(0, 255, 0)):
-        if(bloc_holds is None):
-            bloc_holds = list(range(self.num_leds))
-        for hold in bloc_holds:
-            for i in hold:
-                self.leds[i] = color
-
-    def show(self):
-        for i, color in enumerate(self.leds):
-            pixels[i] = color
-        pixels.show()
+def show_leds_lettres(sequence_lettres):
+    # pixels.fill((0, 0, 0))
+    # pixels.show()
     
-
-LEDs = AllLeds(num_leds)
-
-def show_leds():
-    global selected_bloc_holds, LEDs
-    LEDs.set_bloc(selected_bloc_holds)
+    pass
 
 
+input_sequence = pygame.Rect(100, 100, 140, 32)
+color_inactive = pygame.Color('lightskyblue3')
+color_active = pygame.Color('dodgerblue2')
+color = color_inactive
+active = False
 
+# Set up the button
+button_rect = pygame.Rect(100, 200, 140, 32)
+button_color = pygame.Color('green')
+
+COLOR_INACTIVE = pygame.Color('lightskyblue3')
+COLOR_ACTIVE = pygame.Color('dodgerblue2')
+
+class InputBox:
+
+    def __init__(self, x, y, w, h, text=''):
+        self.rect = pygame.Rect(x, y, w, h)
+        self.color = COLOR_INACTIVE
+        self.text = text
+        self.txt_surface = font.render(text, True, self.color)
+        self.active = False
+
+    def handle_event(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            # If the user clicked on the input_box rect.
+            if self.rect.collidepoint(event.pos):
+                # Toggle the active variable.
+                self.active = not self.active
+            else:
+                self.active = False
+            # Change the current color of the input box.
+            self.color = COLOR_ACTIVE if self.active else COLOR_INACTIVE
+        if event.type == pygame.KEYDOWN:
+            if self.active:
+                if event.key == pygame.K_BACKSPACE:
+                    self.text = self.text[:-1]
+                else:
+                    self.text += event.unicode
+                # Re-render the text.
+                self.txt_surface = font.render(self.text, True, self.color)
+
+    def update(self):
+        # Resize the box if the text is too long.
+        width = max(200, self.txt_surface.get_width()+10)
+        self.rect.w = width
+
+    def draw(self, screen):
+        # Blit the text.
+        screen.blit(self.txt_surface, (self.rect.x+5, self.rect.y+5))
+        # Blit the rect.
+        pygame.draw.rect(screen, self.color, self.rect, 2)
+
+input_sequence = InputBox(400, 100, 140, 32)
+input_name = InputBox(100, 100, 140, 32)
+button_submit = Button("Submit", 100, 200, 140, 32, WHITE, BLUE)
+text_name = _text_(FONT, 24, "nom du bloc", True, WHITE, BLUE, 100, 50)
+text_seqence = _text_(FONT, 24, "s?quence du bloc", True, WHITE, BLUE, 400, 50)
+
+button_add_bloc = Button("Add Bloc", 500, 500, 140, 32, WHITE, BLUE)
 
 
 while True:
@@ -212,19 +250,50 @@ while True:
             # Check if the right arrow button was clicked
             if right_arrow.button_clicked(event):
                 current_page = handle_right_arrow_click(current_page, num_pages)
-                
+            
             for button in buttons:
                 if button.button_clicked(event):
-                    set_bloc(button.index)
+                    set_bloc(button.text)
+            
+            if(button_add_bloc.button_clicked(event)):
+                current_scene = 'addbloc'
+                pass
+            
+            
+        if current_scene == 'addbloc':
+            input_sequence.handle_event(event)
+            input_name.handle_event(event)
+            if(button_submit.button_clicked(event)):
+                if(input_sequence.text != ''):
+                    sequence = input_sequence.text.replace(' ', '').replace('\r','').split(',')
+                    name = input_name.text
+                    blocs[name] = sequence
+                    print(blocs)
+                    input_sequence.text = ''
+                    buttons = create_buttons(list(blocs.keys()), x_start_pos, y_start_pos, button_width, button_height, button_spacing)
+                    screen.fill((30, 30, 30))
+                    current_scene = 'button_list'
                     pass
 
     if current_scene == 'button_list':
+        screen.fill((30, 30, 30))
         draw_button_list_scene(screen, buttons, current_page)
         draw_info_current_bloc(screen)
         show_leds()
         left_arrow.draw(screen)
         right_arrow.draw(screen)
-
+        button_add_bloc.draw(screen)
+        
+    if current_scene == 'addbloc':
+        screen.fill((30, 30, 30))
+        input_sequence.update()
+        input_sequence.draw(screen)
+        input_name.update()
+        input_name.draw(screen)
+        text_name._textblit_(screen)
+        text_seqence._textblit_(screen)
+        button_submit.draw(screen)
+        
 
     pygame.display.flip()
 
